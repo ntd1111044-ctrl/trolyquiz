@@ -74,6 +74,7 @@ export interface GeneratorConfig {
 
 export type GenerationStatus = 'idle' | 'generating' | 'success' | 'error';
 export type PageType = 'create' | 'library' | 'reports' | 'settings' | 'support';
+export type UserRole = 'teacher' | 'student';
 
 // Lịch sử tạo quiz (tự động lưu)
 export interface QuizHistory {
@@ -92,6 +93,7 @@ export interface AppSettings {
   defaultTimer: number;
   defaultSound: boolean;
   defaultDifficulty: DifficultyLevel;
+  teacherPassword?: string;
 }
 
 // Dữ liệu phân tích/thống kê
