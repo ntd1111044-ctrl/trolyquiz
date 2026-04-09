@@ -18,10 +18,13 @@ import {
     BookOpen,
     X,
     Save,
-    Gamepad2
+    Gamepad2,
+    Users,
+    Lock,
+    Unlock
 } from 'lucide-react';
 import { generateQuizData } from './services/geminiService';
-import { QuizQuestion, GenerationStatus, DifficultyLevel, DIFFICULTY_LABELS, SavedQuiz, PageType, AppSettings, AnalyticsData, GameTheme, GAME_THEME_LABELS, SourceMode, SOURCE_MODE_LABELS } from './types';
+import { QuizQuestion, GenerationStatus, DifficultyLevel, DIFFICULTY_LABELS, SavedQuiz, PageType, AppSettings, AnalyticsData, GameTheme, GAME_THEME_LABELS, SourceMode, SOURCE_MODE_LABELS, UserRole } from './types';
 import { HTML_TEMPLATE, EXPORT_FILENAME } from './constants';
 import { getGameTemplate } from './services/gameTemplates';
 import QuizPreview from './components/QuizPreview';
@@ -61,6 +64,14 @@ const App: React.FC = () => {
     const [showApiKeyModal, setShowApiKeyModal] = useState(false);
     const [appSettings, setAppSettings] = useState<AppSettings>(storageService.getSettings());
 
+    // Role & Auth
+    const [userRole, setUserRole] = useState<UserRole>(() => {
+        const savedRole = localStorage.getItem('quizgen_role') as UserRole;
+        return savedRole || 'teacher';
+    });
+    const [showRoleModal, setShowRoleModal] = useState(false);
+    const [rolePassword, setRolePassword] = useState('');
+
     // Analytics
     const [analytics, setAnalytics] = useState<AnalyticsData>(storageService.getAnalytics());
 
@@ -79,10 +90,10 @@ const App: React.FC = () => {
         const savedKey = localStorage.getItem('gemini_api_key');
         if (savedKey) {
             setApiKey(savedKey);
-        } else {
-            setShowApiKeyModal(true); // Hiển thị modal bắt buộc nhập key
+        } else if (userRole === 'teacher') {
+            setShowApiKeyModal(true); // Chỉ hiện modal bắt buộc nhập key cho GV
         }
-    }, []);
+    }, [userRole]);
 
     // Refresh analytics when page changes to reports
     useEffect(() => {
@@ -192,6 +203,27 @@ const App: React.FC = () => {
         setApiKey(key.trim());
     };
 
+    const handleSwitchRole = () => {
+        if (userRole === 'teacher') {
+            // Đang là GV, chuyển sang HS không cần pass
+            localStorage.setItem('quizgen_role', 'student');
+            setUserRole('student');
+            setCurrentPage('library');
+            alert('Đã chuyển sang chế độ Học sinh!');
+        } else {
+            // Đang là HS, chuyển sang GV cần pass
+            if (rolePassword === (appSettings.teacherPassword || 'admin')) {
+                localStorage.setItem('quizgen_role', 'teacher');
+                setUserRole('teacher');
+                setShowRoleModal(false);
+                setRolePassword('');
+                alert('Đã chuyển sang chế độ Giáo viên!');
+            } else {
+                alert('Mật khẩu không chính xác!');
+            }
+        }
+    };
+
     return (
         <div className="flex h-screen overflow-hidden bg-background-light font-display text-slate-800">
 
@@ -204,20 +236,22 @@ const App: React.FC = () => {
                         </div>
                         <div>
                             <h1 className="text-lg font-bold leading-tight text-slate-900">QuizGen AI</h1>
-                            <p className="text-xs text-slate-500 font-medium">Dành Cho Giáo Viên</p>
+                            <p className="text-xs text-slate-500 font-medium">{userRole === 'teacher' ? 'Dành Cho Giáo Viên' : 'Dành Cho Học Sinh'}</p>
                         </div>
                     </div>
                     <nav className="flex flex-col gap-2">
-                        <button
-                            onClick={() => setCurrentPage('create')}
-                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${currentPage === 'create'
-                                ? 'bg-primary/10 text-primary border-l-4 border-primary'
-                                : 'text-slate-500 hover:bg-slate-50 hover:text-primary border-l-4 border-transparent'
-                                }`}
-                        >
-                            <PlusCircle size={20} />
-                            <span>Tạo Bài Mới</span>
-                        </button>
+                        {userRole === 'teacher' && (
+                            <button
+                                onClick={() => setCurrentPage('create')}
+                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${currentPage === 'create'
+                                    ? 'bg-primary/10 text-primary border-l-4 border-primary'
+                                    : 'text-slate-500 hover:bg-slate-50 hover:text-primary border-l-4 border-transparent'
+                                    }`}
+                            >
+                                <PlusCircle size={20} />
+                                <span>Tạo Bài Mới</span>
+                            </button>
+                        )}
                         <button
                             onClick={() => setCurrentPage('library')}
                             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${currentPage === 'library'
@@ -226,29 +260,33 @@ const App: React.FC = () => {
                                 }`}
                         >
                             <Library size={20} />
-                            <span>Thư Viện</span>
+                            <span>{userRole === 'teacher' ? 'Thư Viện' : 'Danh Sách Bài Học'}</span>
                         </button>
-                        <button
-                            onClick={() => setCurrentPage('reports')}
-                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${currentPage === 'reports'
-                                ? 'bg-primary/10 text-primary border-l-4 border-primary'
-                                : 'text-slate-500 hover:bg-slate-50 hover:text-primary border-l-4 border-transparent'
-                                }`}
-                        >
-                            <BarChart3 size={20} />
-                            <span>Báo Cáo</span>
-                        </button>
+                        {userRole === 'teacher' && (
+                            <button
+                                onClick={() => setCurrentPage('reports')}
+                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${currentPage === 'reports'
+                                    ? 'bg-primary/10 text-primary border-l-4 border-primary'
+                                    : 'text-slate-500 hover:bg-slate-50 hover:text-primary border-l-4 border-transparent'
+                                    }`}
+                            >
+                                <BarChart3 size={20} />
+                                <span>Báo Cáo</span>
+                            </button>
+                        )}
                         <div className="my-4 border-t border-slate-100"></div>
-                        <button
-                            onClick={() => setCurrentPage('settings')}
-                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${currentPage === 'settings'
-                                ? 'bg-primary/10 text-primary border-l-4 border-primary'
-                                : 'text-slate-500 hover:bg-slate-50 hover:text-primary border-l-4 border-transparent'
-                                }`}
-                        >
-                            <SettingsIcon size={20} />
-                            <span>Cài Đặt</span>
-                        </button>
+                        {userRole === 'teacher' && (
+                            <button
+                                onClick={() => setCurrentPage('settings')}
+                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${currentPage === 'settings'
+                                    ? 'bg-primary/10 text-primary border-l-4 border-primary'
+                                    : 'text-slate-500 hover:bg-slate-50 hover:text-primary border-l-4 border-transparent'
+                                    }`}
+                            >
+                                <SettingsIcon size={20} />
+                                <span>Cài Đặt</span>
+                            </button>
+                        )}
                         <button
                             onClick={() => setCurrentPage('support')}
                             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold transition-all ${currentPage === 'support'
@@ -261,7 +299,30 @@ const App: React.FC = () => {
                         </button>
                     </nav>
                 </div>
-                <div className="mt-auto p-6">
+                <div className="mt-auto p-6 space-y-4">
+                    {/* Role Switcher */}
+                    <div className="pt-4 border-t border-slate-100">
+                        <button
+                            onClick={() => {
+                                if (userRole === 'teacher') {
+                                    handleSwitchRole();
+                                } else {
+                                    setShowRoleModal(true);
+                                }
+                            }}
+                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl font-bold transition-all shadow-sm ${userRole === 'teacher'
+                                ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                : 'bg-primary/10 text-primary hover:bg-primary/20'
+                                }`}
+                        >
+                            <div className="flex items-center gap-2">
+                                <Users size={18} />
+                                <span>Chế độ: {userRole === 'teacher' ? 'GV' : 'HS'}</span>
+                            </div>
+                            {userRole === 'student' ? <Lock size={16} /> : <Unlock size={16} />}
+                        </button>
+                    </div>
+
                     <div className="bg-teal-50 p-4 rounded-xl border border-teal-100">
                         <p className="text-xs font-bold text-primary uppercase tracking-wider mb-1">Gói Pro</p>
                         <p className="text-xs text-slate-500 mb-3">Không giới hạn tạo câu hỏi AI</p>
@@ -279,6 +340,7 @@ const App: React.FC = () => {
                     <LibraryPage
                         savedQuizzes={savedQuizzes}
                         onDelete={handleDeleteQuiz}
+                        role={userRole}
                         onReload={(quiz) => {
                             setTopic(quiz.topic);
                             setQuestions(quiz.questions);
@@ -766,6 +828,53 @@ const App: React.FC = () => {
                                     className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-600/30"
                                 >
                                     Lưu API Key
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Role Switcher Modal (Auth) */}
+            {showRoleModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+                    <div className="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden animate-in zoom-in-95">
+                        <div className="bg-gradient-to-r from-red-600 to-orange-500 px-6 py-5 text-white flex items-center gap-3">
+                            <Lock className="w-6 h-6" />
+                            <h3 className="text-xl font-bold">Xác nhận Giáo viên</h3>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            <p className="text-sm text-slate-600">Vui lòng nhập mật khẩu GV để truy cập các tính năng quản lý.</p>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Mật khẩu</label>
+                                <input
+                                    type="password"
+                                    value={rolePassword}
+                                    onChange={(e) => setRolePassword(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSwitchRole()}
+                                    placeholder="Nhập mật khẩu..."
+                                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-red-500 outline-none transition-all"
+                                    autoFocus
+                                />
+                                <p className="text-[10px] text-slate-400 mt-2 italic">Mật khẩu mặc định: admin</p>
+                            </div>
+
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    onClick={() => {
+                                        setShowRoleModal(false);
+                                        setRolePassword('');
+                                    }}
+                                    className="flex-1 px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all text-sm"
+                                >
+                                    Đóng
+                                </button>
+                                <button
+                                    onClick={handleSwitchRole}
+                                    className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-red-600/30 text-sm"
+                                >
+                                    Đăng nhập
                                 </button>
                             </div>
                         </div>
