@@ -223,6 +223,34 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, apiKey, onSaveSet
                     </div>
                 </div>
 
+                {/* Password Section */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="bg-gradient-to-r from-red-50 to-orange-50 px-6 py-4 border-b border-slate-200">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-red-100 p-2 rounded-lg">
+                                <Key className="w-5 h-5 text-red-600" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-900">Mật khẩu Giáo viên</h3>
+                                <p className="text-sm text-slate-600">Dùng để chuyển sang chế độ GV</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="p-6">
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-2">Mật khẩu mới</label>
+                            <input
+                                type="text"
+                                value={localSettings.teacherPassword || ''}
+                                onChange={(e) => setLocalSettings({ ...localSettings, teacherPassword: e.target.value })}
+                                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-red-500 outline-none transition-all"
+                                placeholder="Nhập mật khẩu mới..."
+                            />
+                            <p className="text-xs text-slate-500 mt-2 italic">⚠️ Lưu ý: Tuyệt đối không xóa mật khẩu để đảm bảo tính riêng tư của Giáo viên.</p>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Save Button */}
                 <button
                     onClick={handleSave}
