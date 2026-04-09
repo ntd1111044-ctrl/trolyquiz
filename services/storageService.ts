@@ -142,10 +142,11 @@ export const getSettings = (): AppSettings => {
         if (!data) {
             // Cài đặt mặc định
             return {
-                defaultModel: 'gemini-2.0-flash-exp',
+                defaultModel: 'gemini-1.5-flash',
                 defaultTimer: 0,
                 defaultSound: true,
-                defaultDifficulty: 'hon_hop'
+                defaultDifficulty: 'hon_hop',
+                teacherPassword: 'admin' // Mật khẩu mặc định
             };
         }
         return JSON.parse(data);
