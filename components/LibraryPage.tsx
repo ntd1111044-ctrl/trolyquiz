@@ -9,9 +9,10 @@ interface LibraryPageProps {
     savedQuizzes: SavedQuiz[];
     onDelete: (id: string) => void;
     onReload: (quiz: SavedQuiz) => void;
+    role: 'teacher' | 'student';
 }
 
-const LibraryPage: React.FC<LibraryPageProps> = ({ savedQuizzes, onDelete, onReload }) => {
+const LibraryPage: React.FC<LibraryPageProps> = ({ savedQuizzes, onDelete, onReload, role }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedQuiz, setSelectedQuiz] = useState<SavedQuiz | null>(null);
     const [showPreview, setShowPreview] = useState(false);
@@ -142,16 +143,18 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ savedQuizzes, onDelete, onRel
                                         <Download className="w-4 h-4" />
                                         Tải
                                     </button>
-                                    <button
-                                        onClick={() => {
-                                            if (confirm(`Xóa "${quiz.name}"?`)) {
-                                                onDelete(quiz.id);
-                                            }
-                                        }}
-                                        className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg font-bold text-sm transition-all"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    {role === 'teacher' && (
+                                        <button
+                                            onClick={() => {
+                                                if (confirm(`Xóa "${quiz.name}"?`)) {
+                                                    onDelete(quiz.id);
+                                                }
+                                            }}
+                                            className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg font-bold text-sm transition-all"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>
